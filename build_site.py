@@ -3,7 +3,7 @@ import os, html
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "site")
 PHONE = "786.417.2459"
 TEL = "+17864172459"
-PHONES = [("786.417.2459", "+17864172459"), ("786.417.3890", "+17864173890"), ("786.245.4545", "+17862454545")]
+PHONES = [("786.417.2459", "+17864172459"), ("786.417.3890", "+17864173890")]
 EMAIL = "keytoinsurance@hotmail.com"
 ADDR = "2423 NW 97th Ave, Miami, FL 33172"
 SITE = "https://www.thekeytoinsurance.com"
@@ -34,6 +34,9 @@ def L(en, es):
 
 KEYG = KEY.split(">", 1)[1].rsplit("</svg", 1)[0]
 
+# Pages linked from the footer but not the main nav
+FOOTER_ONLY = {"access"}
+
 # Route table: key -> (english file, spanish file)
 ROUTES = {
     "home": ("index.html", "index.html"),
@@ -42,10 +45,12 @@ ROUTES = {
     "more": ("more-coverage.html", "mas-coberturas.html"),
     "about": ("about.html", "nosotros.html"),
     "contact": ("contact.html", "contacto.html"),
+    "access": ("accessibility.html", "accesibilidad.html"),
 }
 NAV_LABELS = {
     "home": ("Home", "Inicio"), "auto": ("Auto", "Auto"), "homeins": ("Home", "Hogar"),
     "more": ("More Coverage", "Más coberturas"), "about": ("About", "Nosotros"), "contact": ("Contact", "Contacto"),
+    "access": ("Accessibility", "Accesibilidad"),
 }
 
 def fname(key, lang=None):
@@ -69,7 +74,7 @@ def tel_btn(cls="btn btn-gold btn-lg", label=None):
 
 def shell(key, title, desc, body, schema=""):
     cur = ' aria-current="page"'
-    nav = "".join(f'<a href="{fname(k)}"{cur if k == key else ""}>{L(*NAV_LABELS[k])}</a>' for k in ROUTES)
+    nav = "".join(f'<a href="{fname(k)}"{cur if k == key else ""}>{L(*NAV_LABELS[k])}</a>' for k in ROUTES if k not in FOOTER_ONLY)
     en_url = f"{SITE}/" if key == "home" else f"{SITE}/{fname(key, 'en')}"
     es_url = f"{SITE}/es/" if key == "home" else f"{SITE}/es/{fname(key, 'es')}"
     canonical = es_url if LANG == "es" else en_url
@@ -122,7 +127,7 @@ def shell(key, title, desc, body, schema=""):
     <div><a class="brand" href="{fname("home")}">{brand_svg2}<span><b>The Key To Insurance</b><small>Miami, Florida</small></span></a>
       <p>{L("Local Miami agency helping families and business owners find the right coverage at a fair price.", "Agencia local de Miami que ayuda a familias y dueños de negocios a encontrar la cobertura correcta a un precio justo.")}</p></div>
     <div><h4>{L("Coverage", "Coberturas")}</h4>{cov_links}</div>
-    <div><h4>{L("Company", "Empresa")}</h4><a href="{u("about")}">{L("About Us", "Nosotros")}</a><a href="{u("contact")}">{L("Contact", "Contacto")}</a><a href="{u("home", "#faq")}">{L("FAQ", "Preguntas frecuentes")}</a></div>
+    <div><h4>{L("Company", "Empresa")}</h4><a href="{u("about")}">{L("About Us", "Nosotros")}</a><a href="{u("contact")}">{L("Contact", "Contacto")}</a><a href="{u("home", "#faq")}">{L("FAQ", "Preguntas frecuentes")}</a><a href="{u("access")}">{L("Accessibility", "Accesibilidad")}</a></div>
     <div><h4>{L("Get in touch", "Contáctenos")}</h4>{"".join(f'<a href="tel:{t}">{p}</a>' for p, t in PHONES)}<a href="mailto:{EMAIL}">{EMAIL}</a><span style="display:block;padding:4px 0">{ADDR}</span></div>
   </div>
   <div class="legal"><span>© 2026 The Key To Insurance. {L("All rights reserved.", "Todos los derechos reservados.")}</span><span>{L("Coverage, carriers and availability vary by policy and eligibility.", "La cobertura, las aseguradoras y la disponibilidad varían según la póliza y la elegibilidad.")}</span></div>
@@ -198,7 +203,7 @@ def owner(show_checks=True):
 </div>'''
 
 def stats():
-    items = [("15+", L("Years serving Miami", "Años sirviendo a Miami")), (str(len(CARRIER_LIST)), L("Insurance carriers", "Aseguradoras")), ("24/7", L("Claims support", "Ayuda con reclamos"))]
+    items = [("15+", L("Years serving Miami", "Años sirviendo a Miami")), ("20+", L("Insurance carriers", "Aseguradoras")), ("24/7", L("Claims support", "Ayuda con reclamos"))]
     cells = "".join(f'<div><b>{n}</b><span>{l}</span></div>' for n, l in items)
     return f'<section class="stats" aria-label="{L("By the numbers", "En cifras")}"><div class="wrap">{cells}</div></section>'
 
@@ -506,6 +511,23 @@ def build(lang):
           L("Contact & Free Quote | The Key To Insurance, Miami", "Contacto y cotización gratis | The Key To Insurance, Miami"),
           L("Call 786.417.2459 or request a callback for a free insurance quote. The Key To Insurance, 2423 NW 97th Ave, Miami, FL.",
             "Llame al 786.417.2459 o pida que le llamemos para una cotización de seguro gratis. The Key To Insurance, 2423 NW 97th Ave, Miami, FL."), contact_body))
+
+    # ---------- ACCESSIBILITY ----------
+    access_body = f'''
+{pagehead(L("Accessibility", "Accesibilidad"), L("Accessibility statement", "Declaración de accesibilidad"), actions=False)}
+<section class="block"><div class="wrap" style="max-width:760px">
+  <p>{L("The Key To Insurance wants everyone, including people with disabilities, to be able to use this website. We are working to meet the Web Content Accessibility Guidelines (WCAG) 2.1, Level AA, and we review the site as we make changes to it.",
+        "En The Key To Insurance queremos que todas las personas, incluidas las personas con discapacidad, puedan usar este sitio web. Trabajamos para cumplir con las Pautas de Accesibilidad para el Contenido Web (WCAG) 2.1, nivel AA, y revisamos el sitio cada vez que lo actualizamos.")}</p>
+  <h2>{L("Need help or found a problem?", "¿Necesita ayuda o encontró un problema?")}</h2>
+  <p>{L("If any part of this site is hard for you to use, or you need information in a different format, please tell us. Call", "Si alguna parte de este sitio le resulta difícil de usar, o necesita la información en otro formato, díganos. Llame al")} <a href="tel:{TEL}">{PHONE}</a> {L("or email", "o escriba a")} <a href="mailto:{EMAIL}">{EMAIL}</a> {L("and let us know the page and the problem you ran into. We will get back to you as soon as we can.", "e indíquenos la página y el problema que encontró. Le responderemos lo antes posible.")}</p>
+  <p>{L("You can also call us during business hours and we will help you with a quote or a policy question by phone.", "También puede llamarnos en horario de oficina y le ayudamos por teléfono con una cotización o una pregunta sobre su póliza.")}</p>
+  <p style="color:var(--muted);font-size:.9rem">{L("Last updated: November 2026", "Última actualización: noviembre de 2026")}</p>
+</div></section>
+'''
+    write(pre + fname("access"), shell("access",
+          L("Accessibility Statement | The Key To Insurance", "Declaración de accesibilidad | The Key To Insurance"),
+          L("How The Key To Insurance works to make this website usable for everyone, and how to tell us about a problem.",
+            "Cómo The Key To Insurance trabaja para que este sitio sea fácil de usar para todos, y cómo avisarnos de un problema."), access_body))
 
 
 build("en")
