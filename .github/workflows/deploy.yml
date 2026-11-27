@@ -1,0 +1,66 @@
+# Deploys site/ to the live SiteGround web root on every push to main,
+# the same rsync-over-SSH that deploy.sh --production does.
+# Can also be run by hand from the Actions tab.
+# Repo secrets it needs (Settings > Secrets and variables > Actions):
+#   SG_SSH_HOST, SG_SSH_PORT, SG_SSH_USER, SG_SSH_KEY, SG_REMOTE_PATH_PRODUCTION
+name: Deploy to SiteGround
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Build site
+        run: python3 build_site.py
+
+      - name: Check secrets are set
+        env:
+          SG_SSH_HOST: ${{ secrets.SG_SSH_HOST }}
+          SG_SSH_PORT: ${{ secrets.SG_SSH_PORT }}
+          SG_SSH_USER: ${{ secrets.SG_SSH_USER }}
+          SG_SSH_KEY: ${{ secrets.SG_SSH_KEY }}
+          SG_REMOTE_PATH_PRODUCTION: ${{ secrets.SG_REMOTE_PATH_PRODUCTION }}
+        run: |
+          for v in SG_SSH_HOST SG_SSH_PORT SG_SSH_USER SG_SSH_KEY SG_REMOTE_PATH_PRODUCTION; do
+            [ -n "${!v}" ] || { echo "Missing repo secret: $v"; exit 1; }
+          done
+
+      - name: Set up SSH key
+        env:
+          SG_SSH_HOST: ${{ secrets.SG_SSH_HOST }}
+          SG_SSH_PORT: ${{ secrets.SG_SSH_PORT }}
+          SG_SSH_KEY: ${{ secrets.SG_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SG_SSH_KEY" > ~/.ssh/sg_key
+          chmod 600 ~/.ssh/sg_key
+          ssh-keyscan -p "$SG_SSH_PORT" "$SG_SSH_HOST" >> ~/.ssh/known_hosts
+
+      - name: Deploy site/ to production
+        env:
+          SG_SSH_HOST: ${{ secrets.SG_SSH_HOST }}
+          SG_SSH_PORT: ${{ secrets.SG_SSH_PORT }}
+          SG_SSH_USER: ${{ secrets.SG_SSH_USER }}
+          SG_REMOTE_PATH_PRODUCTION: ${{ secrets.SG_REMOTE_PATH_PRODUCTION }}
+        run: |
+          rsync -avz --exclude '.DS_Store' \
+            -e "ssh -i $HOME/.ssh/sg_key -p $SG_SSH_PORT -o IdentitiesOnly=yes" \
+            site/ "$SG_SSH_USER@$SG_SSH_HOST:$SG_REMOTE_PATH_PRODUCTION/"
+
+      - name: Remove SSH key
+        if: always()
+        run: rm -f ~/.ssh/sg_key
